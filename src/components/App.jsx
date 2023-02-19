@@ -1,5 +1,4 @@
 import { Component } from 'react';
-import { RotatingLines } from 'react-loader-spinner';
 import { getPhotos } from 'utils/API';
 import { Wrapper } from './App.styled';
 import { Button } from './Button/Button';
@@ -8,6 +7,7 @@ import { Modal } from './Modal/Modal';
 import { Searchbar } from './Searchbar/Searchbar';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { Loader } from './Loader/Loader';
 
 export class App extends Component {
   state = {
@@ -110,15 +110,7 @@ export class App extends Component {
 
         <ImageGallery items={items} onClick={this.clickImage}></ImageGallery>
 
-        {loader && (
-          <RotatingLines
-            strokeColor="grey"
-            strokeWidth="5"
-            animationDuration="0.75"
-            width="96"
-            visible={true}
-          />
-        )}
+        {loader && <Loader></Loader>}
 
         {showLoadMore && <Button onClick={this.loadMore}></Button>}
 
