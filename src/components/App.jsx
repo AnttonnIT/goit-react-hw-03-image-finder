@@ -6,6 +6,8 @@ import { Button } from './Button/Button';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Modal } from './Modal/Modal';
 import { Searchbar } from './Searchbar/Searchbar';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export class App extends Component {
   state = {
@@ -14,7 +16,8 @@ export class App extends Component {
     page: 1,
     loader: false,
     url: '',
-    // showModal: false,
+    total: 0,
+    tags: '',
   };
 
   componentDidUpdate(prevProps, prevState) {
@@ -39,15 +42,23 @@ export class App extends Component {
       this.loader();
       const { query, page } = this.state;
 
-      const { hits, totalHits, total } = await getPhotos(query, page);
+      const { hits, total } = await getPhotos(query, page);
 
       this.setState(({ items }) => ({
         items: [...items, ...hits],
+        total,
       }));
+      if (total === 0) {
+        this.notify(query);
+      }
     } catch (error) {
-      console.error(error);
+      this.errorInfo(error.message);
     } finally {
-      this.loader();
+      this.setState({ loader: false }, () => {
+        if (this.state.page > 1) {
+          this.scroll();
+        }
+      });
     }
   };
 
@@ -56,6 +67,7 @@ export class App extends Component {
       page: page + 1,
     }));
   };
+
   loader = () => {
     this.setState(({ loader }) => ({
       loader: !loader,
@@ -63,23 +75,41 @@ export class App extends Component {
   };
 
   closeModal = () => {
-    this.setState(({ url }) => ({
+    this.setState(({ url, tags }) => ({
       url: '',
+      tags: '',
     }));
   };
-  clickImage = url => {
-    this.setState({ url });
+
+  clickImage = (url, tags) => {
+    this.setState({ url, tags });
   };
+
+  notify = message => {
+    toast.warning(`Oops, "${message}" pictures were not found.`);
+  };
+
+  errorInfo = message => {
+    toast.error(`Oops, something went wrong: ${message}`);
+  };
+
+  scroll = () => {
+    window.scrollBy({
+      top: 260 * 2,
+      behavior: 'smooth',
+    });
+  };
+
   render() {
-    const { items, loader, url } = this.state;
+    const { items, loader, url, page, total, tags } = this.state;
+    const showLoadMore = page < Math.ceil(total / 12);
 
     return (
       <Wrapper>
         <Searchbar onSubmit={this.handleSubmit}></Searchbar>
-        {items.length > 0 && (
-          <ImageGallery items={items} onClick={this.clickImage}></ImageGallery>
-        )}
-        {items.length && <Button onClick={this.loadMore}></Button>}
+
+        <ImageGallery items={items} onClick={this.clickImage}></ImageGallery>
+
         {loader && (
           <RotatingLines
             strokeColor="grey"
@@ -90,7 +120,24 @@ export class App extends Component {
           />
         )}
 
-        {url.length > 0 && <Modal url={url} onClose={this.closeModal}></Modal>}
+        {showLoadMore && <Button onClick={this.loadMore}></Button>}
+
+        {url.length > 0 && (
+          <Modal tags={tags} url={url} onClose={this.closeModal}></Modal>
+        )}
+
+        <ToastContainer
+          position="top-right"
+          autoClose={4000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
+        />
       </Wrapper>
     );
   }
